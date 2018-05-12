@@ -1,14 +1,16 @@
 import Pixel from './pixel';
 
+// 物理坐标
 export default class Point {
 
-	constructor(x, y) {
-		if (typeof x !== 'number' || typeof x !== 'number') {
+	constructor(x, y, z) {
+		if (typeof x !== 'number' || typeof y !== 'number' || (z && typeof z !== 'number')) {
             throw new Error('Point仅支持number类型');
         }
 
         this.x = x;
         this.y = y;
+		this.z = z || 0;
 	}
 
 	toPixel(zoom) {

@@ -1,5 +1,5 @@
 import Mercator from './mercator';
-import Point from '@/geometry/point';
+import { Point, Pixel } from '@/geometry';
 
 export default class LngLat {
 
@@ -20,5 +20,9 @@ export default class LngLat {
         const { x, y } = Mercator.lngLatToPoint(this);
 
         return new Point(x, y);
+    }
+
+    toPixel(zoom) {
+        return this.toPoint().toPixel(zoom);
     }
 }

@@ -1,7 +1,5 @@
-import * as THREE from 'three';
+import CamerControl from './camera';
 
-export default class Control {
-    constructor(camera, ele) {
-        
-    }
+export {
+    CamerControl
 }

@@ -32,7 +32,10 @@ export default class Tile {
             const tileMaterial = new THREE.MeshBasicMaterial({
                 dithering: true,
                 map: texture,
-                side: THREE.FrontSide
+                side: THREE.FrontSide,
+                transparent: true,
+                opacity: 0,
+                color: 0x2b2b2b
             });
 
             const tileMesh = new THREE.Mesh(tileGeometry, tileMaterial);

@@ -1,4 +1,4 @@
-import { Point } from '@/geometry';
+import { Point, Pixel } from '@/geometry';
 
 export default {
 
@@ -13,7 +13,7 @@ export default {
     },
 
     // 获取瓦片坐标
-    getTilePoint(pixel) {
+    getTilePixel(pixel) {
         let x = Math.ceil(pixel.x / 256) - 1;
         let y = Math.ceil(pixel.y / 256) - 1;
 
@@ -26,7 +26,11 @@ export default {
 
     minZoom: 3,
 
-    getTileBounds(tilePoint, mapSize, zoom, offset) {
+    getBounds() {
+        
+    },
+
+    getTileQueue(tilePoint, mapSize, zoom, offset) {
         const { width, height } = mapSize;
         const tileSize = this.getSize();
 
@@ -42,8 +46,7 @@ export default {
 
         for (let y = startY; y >= endY; y--) {
             for (let x = startX; x <= endX; x++) {
-                const coords = new Point(x, y);
-                coords.z = zoom;
+                const coords = new Pixel(x, y, zoom);
                 coords._x = (x - startX) * tileSize - width / 2 + offset.x;
                 coords._y = -1 - offset.y;
                 coords._z = (startY - y) * tileSize - height / 2 - offset.z;

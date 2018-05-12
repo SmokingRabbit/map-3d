@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import LngLat from '@/geo/lngLat';
 import { TileUtils, Tile } from '@/layer/tile';
+import { CamerControl } from '@/control';
 
 export default class Map {
 
@@ -18,6 +19,8 @@ export default class Map {
 
     _tiles = [];
 
+    offset = null;
+
     options = {
         debug: true,
         // 背景颜色
@@ -33,9 +36,7 @@ export default class Map {
         // 相机最远照射点
         cameraFar: 6000,
         // 光源颜色
-        lightColor: 0xffffff,
-        // 地板plane颜色
-        floorColor: 0x222222
+        lightColor: 0xffffff
     };
 
     constructor(ele) {
@@ -60,9 +61,9 @@ export default class Map {
 
         this.initAxes();
 
-        this.initFloor();
-
         this.initRenderer();
+
+        this.initCameraControl();
 
         this.render();
 
@@ -101,23 +102,6 @@ export default class Map {
         }
     }
 
-    initFloor() {
-        const { floorColor } = this.options;
-        const { width, height } = this.getMapSize();
-        const floorGeometry = new THREE.BoxBufferGeometry(width, 0, height);
-        const floorMaterial = new THREE.MeshBasicMaterial({
-            color: floorColor,
-            dithering: true
-        });
-        const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
-
-        floorMesh.position.set(0, -2, 0);
-        floorMesh.receiveShadow = true;
-        floorMesh.name = 'floor';
-
-        this.scene.add(floorMesh);
-    }
-
     initRenderer() {
         const { clientWidth, clientHeight } = this;
         const { bgColor, mapWidth, mapHeight } = this.options;
@@ -134,6 +118,14 @@ export default class Map {
         this.renderer.gammaOutput = true;
 
         this.renderEle.appendChild(this.renderer.domElement);
+    }
+
+    initCameraControl() {
+        let control = new CamerControl(this.camera, this.renderEle, this.render.bind(this));
+        control.target = new THREE.Vector3(0, 0, 0);
+        control.enabled = true;
+        control.enablePan = true;
+        control.enableZoom = false;
     }
 
     render() {
@@ -219,13 +211,14 @@ export default class Map {
         // 获取瓦片偏移
         const tileOffset = TileUtils.getTileCenterOffset(centerPixel);
         // 获取中心瓦片坐标
-        const tileCenterPoint = TileUtils.getTilePoint(centerPixel);
-        const queue = TileUtils.getTileBounds(tileCenterPoint, this.getMapSize(), this.getZoom(), tileOffset);
+        const tileCenterPixel = TileUtils.getTilePixel(centerPixel);
+        const queue = TileUtils.getTileQueue(tileCenterPixel, this.getMapSize(), this.getZoom(), tileOffset);
 
         queue.forEach((tilePoint) => {
-            let t = new Tile(tilePoint)
-            t.createTile((tileMesh) => {
+            let tile = new Tile(tilePoint);
+            tile.createTile((tileMesh) => {
                 this.scene.add(tileMesh);
+                tileMesh.material.opacity = 1;
                 this.render();
             });
         });
