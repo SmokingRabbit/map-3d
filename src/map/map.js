@@ -1,17 +1,22 @@
 import * as THREE from 'three';
 import LngLat from '@/geo/lngLat';
-import { TileUtils } from '@/layer/tile';
+import { TileUtils, Tile } from '@/layer/tile';
 
 export default class Map {
 
     // 缩放级别
-    zoom = 5;
+    zoom = 12;
 
     // 宽度
     width = 0;
 
     // 高度
     height = 0;
+
+    // 视角中心
+    viewCenter = null;
+
+    _tiles = [];
 
     options = {
         debug: true,
@@ -22,11 +27,11 @@ export default class Map {
         // 雾化比例点
         fogPercent: 0.015,
         // 相机可视角
-        cameraFov: 120,
+        cameraFov: 70,
         // 相机最近照射点
         cameraNear: 5,
         // 相机最远照射点
-        cameraFar: 4000,
+        cameraFar: 6000,
         // 光源颜色
         lightColor: 0xffffff,
         // 地板plane颜色
@@ -68,8 +73,7 @@ export default class Map {
         const { bgColor, fogColor, fogPercent } = this.options;
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor);
-        this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
-        // this.scene.overrideMaterial = new THREE.MeshLambertMaterial({color: 0xffffff});
+        // this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
     }
 
     initCamera() {
@@ -78,7 +82,8 @@ export default class Map {
         const { width, height } = this.getMapSize();
 
         this.camera = new THREE.PerspectiveCamera(cameraFov, clientWidth / clientHeight, cameraNear, cameraFar);
-        this.camera.position.set(20, 40, 20);
+        this.camera.position.set(0, 260, 145);
+        // this.camera.position.set(0, 300, 0);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
 
@@ -106,8 +111,7 @@ export default class Map {
         });
         const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
 
-        floorMesh.position.set(0, -1, 0);
-        // floorMesh.position.set(width / 2, -1, height / 2);
+        floorMesh.position.set(0, -2, 0);
         floorMesh.receiveShadow = true;
         floorMesh.name = 'floor';
 
@@ -162,11 +166,11 @@ export default class Map {
 
     getMapSize() {
         const tileSize = TileUtils.getSize();
-        const scale = this.zoom - 2;
 
+        // 不能小于6
         return {
-            width: tileSize * 6,
-            height: tileSize * 3
+            width: tileSize * 12,
+            height: tileSize * 6
         }
     }
 
@@ -174,8 +178,9 @@ export default class Map {
         return this.zoom;
     }
 
-    setZoom() {
-
+    setZoom(zoom) {
+        this.zoom = zoom;
+        this.update();
     }
 
     zoomIn() {
@@ -187,37 +192,42 @@ export default class Map {
     }
 
     getContainer() {
-
+        return this.renderEle;
     }
 
     getCenter() {
-
+        return this.viewCenter;
     }
 
     setCenter(lng, lat) {
         if (lng instanceof LngLat) {
-            this.update(lng);
+            this.viewCenter = lng;
         }
         else {
-            this.update(new LngLat(lng, lat));
+            this.viewCenter = new LngLat(lng, lat);
         }
+        this.update();
     }
 
 
     update(lngLat) {
+        lngLat = lngLat || this.getCenter();
         // 获取坐标
         const centerMercator = lngLat.toPoint();
         // 获取像素
         const centerPixel = centerMercator.toPixel(this.getZoom());
+        // 获取瓦片偏移
+        const tileOffset = TileUtils.getTileCenterOffset(centerPixel);
         // 获取中心瓦片坐标
-        const tileCenter = TileUtils.getPoint(centerPixel);
-        const mapSize = this.getMapSize();
-        const tileQueue = TileUtils.getBounds(tileCenter, mapSize, this.zoom);
+        const tileCenterPoint = TileUtils.getTilePoint(centerPixel);
+        const queue = TileUtils.getTileBounds(tileCenterPoint, this.getMapSize(), this.getZoom(), tileOffset);
 
-        // tileQueue.forEach((tilePoint) => {
-        //     const orgin = 'http://online0.map.bdimg.com/tile/?qt=tile';
-        //     let url =  orgin + '&x=' + tilePoint.x + '&y=' + tilePoint.y + '&z=' + this.zoom + '&styles=pl&scaler=2&udt=20180506';
-        //     console.log(url)
-        // });
+        queue.forEach((tilePoint) => {
+            let t = new Tile(tilePoint)
+            t.createTile((tileMesh) => {
+                this.scene.add(tileMesh);
+                this.render();
+            });
+        });
     }
 }

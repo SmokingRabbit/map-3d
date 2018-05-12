@@ -15,6 +15,6 @@ export default class Point {
 		let x = this.x * Math.pow(2, zoom - 18);
 		let y = this.y * Math.pow(2, zoom - 18);
 
-		return new Pixel(Math.floor(x), Math.floor(y));
+		return new Pixel(Math.ceil(x), Math.ceil(y));
 	}
 }

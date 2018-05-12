@@ -295,7 +295,7 @@
             var map = new BMap.Map("map");
 
             var p = new BMap.Point(116.404, 39.915);
-            var zoom = 3;
+            var zoom = 15;
             map.centerAndZoom(p, zoom);
             console.log('point', p);
 
@@ -307,7 +307,7 @@
             var m = mercator2lonLat(sp.x, sp.y);
             console.log('算法墨卡托转经纬度', m);
 
-            console.log('百度地图像素', new BMap.Pixel(s.x, s.y));
+            console.log('百度地图像素', map.pointToPixel(p));
 
 
             var x = sp.x * Math.pow(2, zoom - 18);
