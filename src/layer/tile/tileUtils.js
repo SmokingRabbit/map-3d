@@ -13,7 +13,7 @@ export default {
     },
 
     // 获取瓦片坐标
-    getTilePixel(pixel) {
+    getTilePoint(pixel) {
         let x = Math.ceil(pixel.x / 256) - 1;
         let y = Math.ceil(pixel.y / 256) - 1;
 
@@ -26,8 +26,8 @@ export default {
 
     minZoom: 3,
 
-    getBounds() {
-
+    getBounds(mapInstance) {
+        
     },
 
     getTileQueue(tilePoint, mapSize, zoom, offset) {

@@ -1,3 +1,10 @@
 import Map from '@/map/map';
+import { Point, Pixel } from '@/geometry';
+import { LngLat } from '@/geo';
 
-export default Map;
+export {
+    Map,
+    Point,
+    Pixel,
+    LngLat
+}

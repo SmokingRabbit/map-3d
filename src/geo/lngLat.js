@@ -1,4 +1,5 @@
 import Mercator from './mercator';
+import Map from '@/map/map';
 import { Point, Pixel } from '@/geometry';
 
 export default class LngLat {
@@ -24,5 +25,13 @@ export default class LngLat {
 
     toPixel(zoom) {
         return this.toPoint().toPixel(zoom);
+    }
+
+    toMapVector3(mapInstance) {
+        if (!(mapInstance instanceof Map)) {
+            throw new Error('toMapPoint 需要map 实例');
+        }
+
+        return mapInstance.toMapVector3(this.toPoint().toPixel());
     }
 }

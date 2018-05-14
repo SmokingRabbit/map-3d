@@ -1,23 +1,22 @@
 import * as THREE from 'three';
-import LngLat from '@/geo/lngLat';
+import { LngLat } from '@/geo';
+import { Pixel } from '@/geometry';
 import { TileUtils, Tile } from '@/layer/tile';
 import { CamerControl } from '@/control';
+import { Cylinder } from '@/layer/cylinder';
+
 
 export default class Map {
 
     // 缩放级别
-    zoom = 12;
-
-    // 宽度
-    width = 0;
-
-    // 高度
-    height = 0;
+    zoom = 11;
 
     // 视角中心
     viewCenter = null;
 
     tiles = [];
+
+    sceneObjs = [];
 
     offset = null;
 
@@ -38,7 +37,7 @@ export default class Map {
         // 光源颜色
         lightColor: 0xffffff,
         // 地板颜色
-        floorColor: 0xfdfdfd
+        floorColor: 0x242424
     };
 
     constructor(ele) {
@@ -78,7 +77,7 @@ export default class Map {
         const { bgColor, fogColor, fogPercent } = this.options;
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor);
-        this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
+        // this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
     }
 
     initCamera() {
@@ -87,8 +86,8 @@ export default class Map {
         const { width, height } = this.getMapSize();
 
         this.camera = new THREE.PerspectiveCamera(cameraFov, clientWidth / clientHeight, cameraNear, cameraFar);
-        this.camera.position.set(0, 260, 145);
-        // this.camera.position.set(0, 300, 0);
+        // this.camera.position.set(140, 260, 140);
+        this.camera.position.set(150, 200, 150);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
 
@@ -96,6 +95,10 @@ export default class Map {
         const { lightColor, floorColor } = this.options;
         const light = new THREE.HemisphereLight(lightColor, floorColor, 1);
         this.scene.add(light);
+
+        const pointLight = new THREE.PointLight(lightColor, 1, 1000);
+        pointLight.position.set(100, 100, 300);
+        this.scene.add(pointLight);
     }
 
     initAxes() {
@@ -110,9 +113,8 @@ export default class Map {
         const { floorColor } = this.options;
         const { width, height } = this.getMapSize();
         const floorGeometry = new THREE.BoxBufferGeometry(width, 0, height);
-        const floorMaterial = new THREE.MeshBasicMaterial({
+        const floorMaterial = new THREE.MeshPhongMaterial({
             color: floorColor,
-            dithering: true
         });
         const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
 
@@ -134,7 +136,7 @@ export default class Map {
         this.renderer.setSize(clientWidth, clientHeight);
         this.renderer.setClearColor(bgColor);
         this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMapEnabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.gammaInput = true;
         this.renderer.gammaOutput = true;
@@ -180,8 +182,8 @@ export default class Map {
 
         // 不能小于6
         return {
-            width: tileSize * 12,
-            height: tileSize * 6
+            width: tileSize * 16,
+            height: tileSize * 8
         }
     }
 
@@ -229,8 +231,9 @@ export default class Map {
         // 获取瓦片偏移
         const tileOffset = TileUtils.getTileCenterOffset(centerPixel);
         // 获取中心瓦片坐标
-        const tileCenterPixel = TileUtils.getTilePixel(centerPixel);
-        const queue = TileUtils.getTileQueue(tileCenterPixel, this.getMapSize(), this.getZoom(), tileOffset);
+        const tileCenterPixel = TileUtils.getTilePoint(centerPixel);
+        const mapSize = this.getMapSize();
+        const queue = TileUtils.getTileQueue(tileCenterPixel, mapSize, this.getZoom(), tileOffset);
 
         TileUtils.clearTransition(true);
 
@@ -242,5 +245,15 @@ export default class Map {
                 TileUtils.transition(tileMesh, this.render.bind(this));
             });
         });
+
+        this.offset = centerPixel;
+    }
+
+    toMapVector3(pixel) {
+        return new THREE.Vector3(this.offset.x - pixel.x, 0, this.offset.y - pixel.y);
+    }
+
+    addCylinder(data) {
+        let cylinder = new Cylinder(data, this);
     }
 }

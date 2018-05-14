@@ -1,4 +1,5 @@
 import Pixel from './pixel';
+import Map from '@/map/map';
 
 // 物理坐标
 export default class Point {
@@ -19,4 +20,12 @@ export default class Point {
 
 		return new Pixel(Math.ceil(x), Math.ceil(y));
 	}
+
+	toMapVector3(mapInstance) {
+        if (!(mapInstance instanceof Map)) {
+            throw new Error('toMapPoint 需要map 实例');
+        }
+
+        return mapInstance.toMapVector3(this.toPixel());
+    }
 }

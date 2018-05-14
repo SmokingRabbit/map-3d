@@ -40,6 +40,7 @@ export default class Tile {
 
             const tileMesh = new THREE.Mesh(tileGeometry, tileMaterial);
             tileMesh.receiveShadow = true;
+            tileMesh.receiveShadow = true;
             tileMesh.position.set(_x, _y, _z);
 
             this.tile = tileMesh;
