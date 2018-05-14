@@ -27,7 +27,7 @@ export default {
     minZoom: 3,
 
     getBounds() {
-        
+
     },
 
     getTileQueue(tilePoint, mapSize, zoom, offset) {
@@ -55,6 +55,41 @@ export default {
         }
 
         return queue;
-    }
+    },
 
+    tilesTransition: [],
+
+    tileAnimId: null,
+
+    clearTransition(clearQueue = false) {
+        cancelAnimationFrame(this.tileAnimId);
+        if (clearQueue) {
+            this.tilesTransition = [];
+        }
+    },
+
+    transition(tile, render) {
+        this.clearTransition();
+        this.tilesTransition.push(tile);
+
+        const anim = () => {
+            let done = true;
+            this.tilesTransition.forEach((tile) => {
+                if (tile.material.opacity < 1) {
+                    tile.material.opacity += 0.02;
+                    done = false;
+                }
+            });
+
+            if (done === false) {
+                render();
+                this.tileAnimId = requestAnimationFrame(anim);
+            }
+            else {
+                this.clearTransition();
+            }
+        }
+
+        anim();
+    }
 }

@@ -17,7 +17,7 @@ export default class Map {
     // 视角中心
     viewCenter = null;
 
-    _tiles = [];
+    tiles = [];
 
     offset = null;
 
@@ -28,7 +28,7 @@ export default class Map {
         // 雾化颜色
         fogColor: 0x2b2b2b,
         // 雾化比例点
-        fogPercent: 0.015,
+        fogPercent: 0.0015,
         // 相机可视角
         cameraFov: 70,
         // 相机最近照射点
@@ -36,7 +36,9 @@ export default class Map {
         // 相机最远照射点
         cameraFar: 6000,
         // 光源颜色
-        lightColor: 0xffffff
+        lightColor: 0xffffff,
+        // 地板颜色
+        floorColor: 0xfdfdfd
     };
 
     constructor(ele) {
@@ -65,6 +67,8 @@ export default class Map {
 
         this.initCameraControl();
 
+        this.initFloor();
+
         this.render();
 
         this.resizeListner();
@@ -74,7 +78,7 @@ export default class Map {
         const { bgColor, fogColor, fogPercent } = this.options;
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor);
-        // this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
+        this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
     }
 
     initCamera() {
@@ -102,6 +106,24 @@ export default class Map {
         }
     }
 
+    initFloor() {
+        const { floorColor } = this.options;
+        const { width, height } = this.getMapSize();
+        const floorGeometry = new THREE.BoxBufferGeometry(width, 0, height);
+        const floorMaterial = new THREE.MeshBasicMaterial({
+            color: floorColor,
+            dithering: true
+        });
+        const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+
+        floorMesh.position.set(0, -2, 0);
+        floorMesh.receiveShadow = true;
+        floorMesh.name = 'floor';
+
+        this.scene.add(floorMesh);
+    }
+
+
     initRenderer() {
         const { clientWidth, clientHeight } = this;
         const { bgColor, mapWidth, mapHeight } = this.options;
@@ -121,11 +143,8 @@ export default class Map {
     }
 
     initCameraControl() {
-        let control = new CamerControl(this.camera, this.renderEle, this.render.bind(this));
+        let control = new CamerControl(this);
         control.target = new THREE.Vector3(0, 0, 0);
-        control.enabled = true;
-        control.enablePan = true;
-        control.enableZoom = false;
     }
 
     render() {
@@ -201,7 +220,6 @@ export default class Map {
         this.update();
     }
 
-
     update(lngLat) {
         lngLat = lngLat || this.getCenter();
         // 获取坐标
@@ -214,12 +232,14 @@ export default class Map {
         const tileCenterPixel = TileUtils.getTilePixel(centerPixel);
         const queue = TileUtils.getTileQueue(tileCenterPixel, this.getMapSize(), this.getZoom(), tileOffset);
 
+        TileUtils.clearTransition(true);
+
         queue.forEach((tilePoint) => {
-            let tile = new Tile(tilePoint);
-            tile.createTile((tileMesh) => {
+            let tileInstance = new Tile(tilePoint);
+            tileInstance.createTile((tileMesh) => {
                 this.scene.add(tileMesh);
-                tileMesh.material.opacity = 1;
-                this.render();
+                this.tiles.push(tileMesh);
+                TileUtils.transition(tileMesh, this.render.bind(this));
             });
         });
     }
