@@ -71,6 +71,7 @@ export default class CamerControl {
         rotateEnd.set(e.clientX, e.clientY);
         rotateDelta.subVectors(rotateEnd, rotateStart);
         this.rotateLeft(2 * Math.PI * rotateDelta.x / this.mapInstance.clientWidth * rotateSpeed);
+        this.rotateUp( 2 * Math.PI * rotateDelta.y / this.mapInstance.clientHeight * rotateSpeed );
 
         rotateStart.copy(rotateEnd);
 
@@ -84,6 +85,10 @@ export default class CamerControl {
 
     rotateLeft(angle) {
         this.sphericalDelta.theta -= angle;
+    }
+
+    rotateUp(angle) {
+        this.sphericalDelta.phi -= angle;
     }
 
     update() {

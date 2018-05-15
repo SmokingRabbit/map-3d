@@ -13,7 +13,11 @@ module.exports = {
     },
     plugins: [
         new FriendlyErrorsPlugin(),
-        new webpack.HotModuleReplacementPlugin()
+        new webpack.HotModuleReplacementPlugin(),
+        new CopyWebpackPlugin([{
+            from: path.join(__dirname, 'src/texture'),
+            to: path.join(__dirname, 'dist/texture')
+        }])
     ],
     module: {
         rules: [{

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import Stats from 'stats.js';
 import { LngLat } from '@/geo';
 import { Pixel } from '@/geometry';
 import { TileUtils, Tile } from '@/layer/tile';
@@ -25,9 +26,9 @@ export default class Map {
         // 背景颜色
         bgColor: 0x000000,
         // 雾化颜色
-        fogColor: 0x2b2b2b,
+        fogColor: 0xffffff,
         // 雾化比例点
-        fogPercent: 0.0015,
+        fogPercent: 0.00065,
         // 相机可视角
         cameraFov: 70,
         // 相机最近照射点
@@ -60,7 +61,7 @@ export default class Map {
 
         this.initLight();
 
-        this.initAxes();
+        this.initDebugHelper();
 
         this.initRenderer();
 
@@ -75,11 +76,18 @@ export default class Map {
 
     initSceen() {
         const { bgColor, fogColor, fogPercent } = this.options;
+        const { width, height } = this.getMapSize();
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor);
-        // this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
+        this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
 
+        const skyGeometry = new THREE.CubeGeometry(width, width, height);
+        const skyBox = new THREE.Mesh(skyGeometry, new THREE.MeshBasicMaterial({
+            map: THREE.ImageUtils.loadTexture('/texture/sky.png'),
+            side: THREE.BackSide
+        }));
 
+        this.scene.add(skyBox);
     }
 
     initCamera() {
@@ -89,7 +97,7 @@ export default class Map {
 
         this.camera = new THREE.PerspectiveCamera(cameraFov, clientWidth / clientHeight, cameraNear, cameraFar);
         // this.camera.position.set(140, 260, 140);
-        this.camera.position.set(150, 200, 150);
+        this.camera.position.set(300, 300, 300);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
     }
 
@@ -103,20 +111,30 @@ export default class Map {
         this.scene.add(pointLight);
     }
 
-    initAxes() {
-        if (this.options.debug) {
-            const { width } = this.getMapSize();
-            const axesHelper = new THREE.AxesHelper(width);
-            this.scene.add(axesHelper);
+    initDebugHelper() {
+        if (!this.options.debug) {
+            return ;
         }
+
+        const { width } = this.getMapSize();
+        const axesHelper = new THREE.AxesHelper(width);
+        this.scene.add(axesHelper);
+
+        this.stats = new Stats();
+        this.stats.domElement.style.position = 'absolute';
+    	this.stats.domElement.style.bottom = '0px';
+    	this.stats.domElement.style.zIndex = 100;
+    	this.renderEle.appendChild(this.stats.domElement);
     }
 
     initFloor() {
         const { floorColor } = this.options;
         const { width, height } = this.getMapSize();
-        const floorGeometry = new THREE.BoxBufferGeometry(width, 0, height);
-        const floorMaterial = new THREE.MeshPhongMaterial({
+        const floorGeometry = new THREE.BoxBufferGeometry(100, 0, 100);
+        const floorMaterial = new THREE.MeshBasicMaterial({
             color: floorColor,
+            map: new THREE.ImageUtils.loadTexture('/texture/floor.jpg'),
+            side: THREE.DoubleSide
         });
         const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
 
@@ -133,7 +151,8 @@ export default class Map {
         const { bgColor, mapWidth, mapHeight } = this.options;
 
         this.renderer = new THREE.WebGLRenderer({
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: true,
+            antialias: true
         });
         this.renderer.setSize(clientWidth, clientHeight);
         this.renderer.setClearColor(bgColor);
@@ -153,6 +172,9 @@ export default class Map {
 
     render() {
         this.renderer.render(this.scene, this.camera);
+        if (this.options.debug) {
+            this.stats.update();
+        }
     }
 
     resizeListner() {
@@ -185,7 +207,7 @@ export default class Map {
         // 不能小于6
         return {
             width: tileSize * 16,
-            height: tileSize * 8
+            height: tileSize * 16
         }
     }
 
@@ -221,7 +243,7 @@ export default class Map {
         else {
             this.viewCenter = new LngLat(lng, lat);
         }
-        // this.update();
+        this.update();
     }
 
     update(lngLat) {

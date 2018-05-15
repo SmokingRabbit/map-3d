@@ -55,8 +55,8 @@ for (let i = 0; i < 500; i++) {
     });
 }
 //
-// setTimeout(() => {
-//     cylinders.forEach((item) => {
-//         map.addCylinder(item);
-//     })
-// }, 2000);
+setTimeout(() => {
+    cylinders.forEach((item) => {
+        map.addCylinder(item);
+    })
+}, 2000);
