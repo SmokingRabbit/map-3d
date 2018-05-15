@@ -2,9 +2,11 @@ import * as THREE from 'three';
 
 export default class Cylinder {
 
-    constructor(data, mapInstance) {
-        let height = 100;
+    baseWidth = 2;
 
+    geometryType = 1;
+
+    constructor(data, mapInstance) {
         const objects = [];
         let countVaule = 0;
         let vector = mapInstance.toMapVector3(data.lnglat.toPixel(mapInstance.zoom));
@@ -20,9 +22,9 @@ export default class Cylinder {
         let preHeightCount = 0;
 
         data.data.forEach((item, index) => {
-            let _height = Math.floor(height * item.precent);
+            let _height = Math.floor(data.height * item.precent);
             const geometry = new THREE.CylinderBufferGeometry(2, 2, _height, 40);
-            // const geometry = new THREE.BoxBufferGeometry(8, height, 8, 20, 20, 20);
+            // const geometry = new THREE.BoxBufferGeometry(8, _height, 8, 20, 20, 20);
             const material = new THREE.MeshPhongMaterial({
                 color: item.color,
                 specular: 0x7777ff,
@@ -36,5 +38,13 @@ export default class Cylinder {
             mapInstance.scene.add(cylinder);
             mapInstance.render();
         });
+    }
+
+    update() {
+
+    }
+
+    hover() {
+
     }
 }

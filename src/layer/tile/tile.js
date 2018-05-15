@@ -3,8 +3,8 @@ import TileUtils from './tileUtils';
 
 export default class Tile {
 
-    url = 'http://api0.map.bdimg.com/customimage/tile?&x={x}&y={y}&z={z}&udt=20180512&scale=2&ak=E4805d16520de693a3fe707cdc962045&customid=dark'
-    // url = 'http://online2.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z={z}&styles=pl&scaler={scaler}&udt=20180512';
+    // url = 'http://api0.map.bdimg.com/customimage/tile?&x={x}&y={y}&z={z}&udt=20180512&scale=2&ak=E4805d16520de693a3fe707cdc962045&customid=dark'
+    url = 'http://online2.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z={z}&styles=pl&scaler={scaler}&udt=20180512';
     // url = 'http://api2.map.bdimg.com/customimage/tile?&x={x}&y={y}&z={z}&udt=20180512&scale={scale}&ak=E4805d16520de693a3fe707cdc962045&customid=grayscale';
 
     tile = null;
@@ -67,5 +67,9 @@ export default class Tile {
     		}
     		return value;
     	});
+    }
+
+    update() {
+
     }
 }

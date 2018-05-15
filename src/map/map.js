@@ -9,7 +9,7 @@ import { Cylinder } from '@/layer/cylinder';
 export default class Map {
 
     // 缩放级别
-    zoom = 11;
+    zoom = 10;
 
     // 视角中心
     viewCenter = null;
@@ -78,6 +78,8 @@ export default class Map {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor);
         // this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
+
+
     }
 
     initCamera() {
@@ -219,7 +221,7 @@ export default class Map {
         else {
             this.viewCenter = new LngLat(lng, lat);
         }
-        this.update();
+        // this.update();
     }
 
     update(lngLat) {
