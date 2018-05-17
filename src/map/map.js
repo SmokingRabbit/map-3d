@@ -3,14 +3,20 @@ import Stats from 'stats.js';
 import { LngLat } from '@/geo';
 import { Pixel } from '@/geometry';
 import { TileUtils, Tile } from '@/layer/tile';
-import { CamerControl } from '@/control';
+import { CameraControl, ViewportControl } from '@/control';
 import { Cylinder } from '@/layer/cylinder';
 
 
 export default class Map {
 
     // 缩放级别
-    zoom = 10;
+    zoom = 11;
+
+    minZoom = 3;
+
+    maxZoom = 18;
+
+    zoomTransition = false;
 
     // 视角中心
     viewCenter = null;
@@ -19,16 +25,18 @@ export default class Map {
 
     sceneObjs = [];
 
-    offset = null;
+    offset = new Pixel(0, 0, 0);
+
+    cameraTarget = new THREE.Vector3(0, 0, 0);
 
     options = {
         debug: true,
         // 背景颜色
         bgColor: 0x000000,
         // 雾化颜色
-        fogColor: 0xffffff,
+        fogColor: 0x2b2b2b,
         // 雾化比例点
-        fogPercent: 0.00065,
+        fogPercent: 0.00145,
         // 相机可视角
         cameraFov: 70,
         // 相机最近照射点
@@ -38,7 +46,9 @@ export default class Map {
         // 光源颜色
         lightColor: 0xffffff,
         // 地板颜色
-        floorColor: 0x242424
+        floorColor: 0x666666,
+        // 缩放动画
+        zoomAnimation: true
     };
 
     constructor(ele) {
@@ -67,6 +77,8 @@ export default class Map {
 
         this.initCameraControl();
 
+        this.initViewportControl();
+
         this.initFloor();
 
         this.render();
@@ -81,13 +93,18 @@ export default class Map {
         this.scene.background = new THREE.Color(bgColor);
         this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
 
-        const skyGeometry = new THREE.CubeGeometry(width, width, height);
-        const skyBox = new THREE.Mesh(skyGeometry, new THREE.MeshBasicMaterial({
-            map: THREE.ImageUtils.loadTexture('/texture/sky.png'),
-            side: THREE.BackSide
-        }));
+        new THREE.TextureLoader().load('./texture/sky.png', (texture) => {
+            const skyGeometry = new THREE.CubeGeometry(width, width, height);
+            const skyMaterial =new THREE.MeshBasicMaterial({
+                dithering: true,
+                transparent: true,
+                side: THREE.BackSide,
+                map: texture
+            });
 
-        this.scene.add(skyBox);
+            const skyBox = new THREE.Mesh(skyGeometry, skyMaterial);
+            this.scene.add(skyBox);
+        });
     }
 
     initCamera() {
@@ -97,8 +114,8 @@ export default class Map {
 
         this.camera = new THREE.PerspectiveCamera(cameraFov, clientWidth / clientHeight, cameraNear, cameraFar);
         // this.camera.position.set(140, 260, 140);
-        this.camera.position.set(300, 300, 300);
-        this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+        this.camera.position.set(0, 300, 300);
+        this.camera.lookAt(this.cameraTarget);
     }
 
     initLight() {
@@ -130,10 +147,9 @@ export default class Map {
     initFloor() {
         const { floorColor } = this.options;
         const { width, height } = this.getMapSize();
-        const floorGeometry = new THREE.BoxBufferGeometry(100, 0, 100);
+        const floorGeometry = new THREE.BoxBufferGeometry(width, 0, height);
         const floorMaterial = new THREE.MeshBasicMaterial({
             color: floorColor,
-            map: new THREE.ImageUtils.loadTexture('/texture/floor.jpg'),
             side: THREE.DoubleSide
         });
         const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -157,7 +173,7 @@ export default class Map {
         this.renderer.setSize(clientWidth, clientHeight);
         this.renderer.setClearColor(bgColor);
         this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.renderer.shadowMapEnabled = true;
+        this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.gammaInput = true;
         this.renderer.gammaOutput = true;
@@ -166,8 +182,11 @@ export default class Map {
     }
 
     initCameraControl() {
-        let control = new CamerControl(this);
-        control.target = new THREE.Vector3(0, 0, 0);
+        let control = new CameraControl(this);
+    }
+
+    initViewportControl() {
+        let control = new ViewportControl(this);
     }
 
     render() {
@@ -206,8 +225,8 @@ export default class Map {
 
         // 不能小于6
         return {
-            width: tileSize * 16,
-            height: tileSize * 16
+            width: tileSize * 8,
+            height: tileSize * 8
         }
     }
 
@@ -221,11 +240,29 @@ export default class Map {
     }
 
     zoomIn() {
+        if (this.zoom <= this.minZoom) {
+            return ;
+        }
 
+        if (this.options.zoomAnimation) {
+            this.zoomTransition = true;
+        }
+
+        this.zoom -= 1;
+        this.update();
     }
 
     zoomOut() {
+        if (this.zoom >= this.maxZoom) {
+            return ;
+        }
 
+        if (this.options.zoomAnimation) {
+            this.zoomTransition = true;
+        }
+
+        this.zoom += 1;
+        this.update();
     }
 
     getContainer() {
@@ -258,26 +295,65 @@ export default class Map {
         const tileCenterPixel = TileUtils.getTilePoint(centerPixel);
         const mapSize = this.getMapSize();
         const queue = TileUtils.getTileQueue(tileCenterPixel, mapSize, this.getZoom(), tileOffset);
+        const _tiles = [];
+
+        this.offset = centerPixel;
 
         TileUtils.clearTransition(true);
 
         queue.forEach((tilePoint) => {
-            let tileInstance = new Tile(tilePoint);
-            tileInstance.createTile((tileMesh) => {
-                this.scene.add(tileMesh);
-                this.tiles.push(tileMesh);
-                TileUtils.transition(tileMesh, this.render.bind(this));
+            let resaveIndex = -1;
+            let hasTitle = false;
+
+            this.tiles.every((tileInstance, index) => {
+                if (tileInstance.coords.x === tilePoint.x
+                    && tileInstance.coords.y === tilePoint.y
+                    && tileInstance.coords.z === tilePoint.z
+                ) {
+                    _tiles.push(tileInstance);
+                    resaveIndex = index;
+                    hasTitle = true;
+                    tileInstance.update(tilePoint);
+                    return false;
+                }
+                return true;
             });
+
+            if (resaveIndex > -1) {
+                this.tiles.splice(resaveIndex, 1);
+            }
+
+            if (!hasTitle) {
+                let tileInstance = new Tile(tilePoint);
+                _tiles.push(tileInstance);
+                tileInstance.createTile((tileMesh) => {
+                    this.scene.add(tileMesh);
+                    TileUtils.transition(tileMesh, this.render.bind(this));
+                });
+            }
         });
 
-        this.offset = centerPixel;
+        this.sceneObjs.forEach((obj) => {
+            obj.update();
+        });
+
+        this.tiles.forEach((tileInstance) => {
+            this.scene.remove(tileInstance.getTile());
+            tileInstance.destroy();
+        });
+
+        this.tiles = _tiles;
+        this.zoomTransition = false;
+        this.render();
     }
 
     toMapVector3(pixel) {
-        return new THREE.Vector3(this.offset.x - pixel.x, 0, this.offset.y - pixel.y);
+        return new THREE.Vector3(pixel.x - this.offset.x, 0, this.offset.y - pixel.y);
     }
 
     addCylinder(data) {
-        let cylinder = new Cylinder(data, this);
+        const cylinderInstance = new Cylinder(data, this);
+        cylinderInstance.render();
+        this.sceneObjs.push(cylinderInstance);
     }
 }

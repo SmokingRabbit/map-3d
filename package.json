@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "dev": "webpack-dev-server --devtool eval --progress --colors --hot --inline --config webpack.config.dev.js --host 0.0.0.0"
+    "dev": "webpack-dev-server --devtool eval --progress --colors --hot --inline --config webpack.config.dev.js --host 0.0.0.0",
+    "example-build": "webpack --verbose --profile --colors --display-error-details --config webpack.config.example.prod.js"
   },
   "author": "529662174@qq.com",
   "keywords": [

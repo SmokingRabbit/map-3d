@@ -1,5 +1,7 @@
-import CamerControl from './camera';
+import CameraControl from './camera';
+import ViewportControl from './viewport';
 
 export {
-    CamerControl
-}
+    CameraControl,
+    ViewportControl
+};

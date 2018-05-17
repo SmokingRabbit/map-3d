@@ -37,7 +37,7 @@ function getLngLat(i) {
 // }
 const cylinders = [];
 
-for (let i = 0; i < 500; i++) {
+for (let i = 0; i < 50; i++) {
     let len = Math.round(Math.random() * 6);
     let data = [];
 
@@ -54,9 +54,9 @@ for (let i = 0; i < 500; i++) {
         data
     });
 }
+cylinders.forEach((item) => {
+    map.addCylinder(item);
+})
+// setTimeout(() => {
 //
-setTimeout(() => {
-    cylinders.forEach((item) => {
-        map.addCylinder(item);
-    })
-}, 2000);
+// }, 2000);

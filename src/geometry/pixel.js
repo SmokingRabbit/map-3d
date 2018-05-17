@@ -1,5 +1,6 @@
 import Point from './point';
 import Map from '@/map/map';
+import { Mercator, LngLat } from '@/geo';
 
 // 像素坐标
 export default class Pixel {
@@ -19,7 +20,7 @@ export default class Pixel {
         let x = this.x / Math.pow(2, zoom - 18);
 		let y = this.y / Math.pow(2, zoom - 18);
 
-		return new Point(Math.ceil(x), Math.ceil(y));
+		return new Point(Math.floor(x), Math.floor(y));
 	}
 
 	toMapVector3(mapInstance) {
@@ -28,5 +29,10 @@ export default class Pixel {
         }
 
         return mapInstance.toMapVector3(this);
+    }
+
+    toLngLat(zoom) {
+        const { lat, lng } = Mercator.pointToLngLat(this.toPoint(zoom));
+        return new LngLat(lng, lat);
     }
 }

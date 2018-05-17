@@ -39,8 +39,8 @@ export default {
         y *= (lng < 0 ? -1 : 1);
 
         return {
-            x: parseFloat(x.toFixed(2)),
-            y: parseFloat(y.toFixed(2))
+            x: parseFloat(x),
+            y: parseFloat(y)
         };
     },
 
@@ -50,7 +50,7 @@ export default {
         let mc;
         for (let i = 0; i < band.length; i++) {
             if (Math.abs(y) >= band[i]) {
-                mc = MC2LL[i];
+                mc = this.MC2LL[i];
                 break;
             }
         }
