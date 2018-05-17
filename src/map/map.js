@@ -30,7 +30,7 @@ export default class Map {
     cameraTarget = new THREE.Vector3(0, 0, 0);
 
     options = {
-        debug: true,
+        debug: false,
         // 背景颜色
         bgColor: 0x000000,
         // 雾化颜色

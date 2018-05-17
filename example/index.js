@@ -37,7 +37,7 @@ function getLngLat(i) {
 // }
 const cylinders = [];
 
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 100; i++) {
     let len = Math.round(Math.random() * 6);
     let data = [];
 
