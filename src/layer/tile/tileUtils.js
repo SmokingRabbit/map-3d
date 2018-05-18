@@ -27,7 +27,7 @@ export default {
     minZoom: 3,
 
     getBounds(mapInstance) {
-        
+
     },
 
     getTileQueue(tilePoint, mapSize, zoom, offset) {
@@ -57,24 +57,24 @@ export default {
         return queue;
     },
 
-    tilesTransition: [],
+    tilesQueue: [],
 
-    tileAnimId: null,
+    fadeInAnimId: null,
 
     clearTransition(clearQueue = false) {
-        cancelAnimationFrame(this.tileAnimId);
+        cancelAnimationFrame(this.fadeInAnimId);
         if (clearQueue) {
-            this.tilesTransition = [];
+            this.tilesQueue = [];
         }
     },
 
-    transition(tile, render) {
+    fadeIn(tile, next) {
         this.clearTransition();
-        this.tilesTransition.push(tile);
+        this.tilesQueue.push(tile);
 
         const anim = () => {
             let done = true;
-            this.tilesTransition.forEach((tile) => {
+            this.tilesQueue.forEach((tile) => {
                 if (tile.material.opacity < 1) {
                     tile.material.opacity += 0.02;
                     done = false;
@@ -82,11 +82,38 @@ export default {
             });
 
             if (done === false) {
-                render();
-                this.tileAnimId = requestAnimationFrame(anim);
+                next();
+                this.fadeInAnimId = requestAnimationFrame(anim);
             }
             else {
                 this.clearTransition();
+            }
+        }
+
+        anim();
+    },
+
+    fadeOut(tiles, next) {
+        const anim = () => {
+            let done = true;
+
+            tiles.forEach((tileInstance) => {
+                if (tileInstance.getTile().material.opacity > 0) {
+                    tileInstance.getTile().material.opacity -= 0.02;
+                    done = false;
+                }
+                else {
+                    if (!tileInstance.isDestory) {
+                        next(tileInstance);
+                    }
+                }
+            });
+
+            if (done === false) {
+                this.fadeoutAnimId = requestAnimationFrame(anim);
+            }
+            else {
+                cancelAnimationFrame(this.fadeoutAnimId);
             }
         }
 

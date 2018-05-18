@@ -16,7 +16,9 @@ export default class Map {
 
     maxZoom = 18;
 
-    zoomTransition = false;
+    zoomTimer = null;
+
+    tileScale = 1;
 
     // 视角中心
     viewCenter = null;
@@ -36,7 +38,7 @@ export default class Map {
         // 雾化颜色
         fogColor: 0x2b2b2b,
         // 雾化比例点
-        fogPercent: 0.00145,
+        fogPercent: 0.00135,
         // 相机可视角
         cameraFov: 70,
         // 相机最近照射点
@@ -46,9 +48,8 @@ export default class Map {
         // 光源颜色
         lightColor: 0xffffff,
         // 地板颜色
-        floorColor: 0x666666,
-        // 缩放动画
-        zoomAnimation: true
+        floorColor: 0x000000,
+        zoomAnimationDelay: 1000
     };
 
     constructor(ele) {
@@ -91,20 +92,20 @@ export default class Map {
         const { width, height } = this.getMapSize();
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor);
-        this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
+        // this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
 
-        new THREE.TextureLoader().load('./texture/sky.png', (texture) => {
-            const skyGeometry = new THREE.CubeGeometry(width, width, height);
-            const skyMaterial =new THREE.MeshBasicMaterial({
-                dithering: true,
-                transparent: true,
-                side: THREE.BackSide,
-                map: texture
-            });
+        const skyGeometry = new THREE.CubeGeometry(width, width, height);
+        const directions  = ['xpos', 'xneg', 'ypos', 'yneg', 'zpos', 'zneg'];
+        const skyMaterial = [];
+        for (let i = 0; i < 6; i++) {
+            skyMaterial.push(new THREE.MeshBasicMaterial({
+                map: new THREE.TextureLoader().load('./texture/' + directions[i] + '.png'),
+                side: THREE.BackSide
+            }));
+        }
 
-            const skyBox = new THREE.Mesh(skyGeometry, skyMaterial);
-            this.scene.add(skyBox);
-        });
+        const skyBox = new THREE.Mesh(skyGeometry, skyMaterial);
+        this.scene.add(skyBox);
     }
 
     initCamera() {
@@ -234,9 +235,21 @@ export default class Map {
         return this.zoom;
     }
 
+    clearZoomTimer() {
+        clearTimeout(this.zoomTimer);
+        this.zoomTimer = null;
+    }
+
     setZoom(zoom) {
         this.zoom = zoom;
         this.update();
+    }
+
+    zoomAnimToScaleTile() {
+        this.tiles.forEach((tileInstance) => {
+            tileInstance.update(tileInstance.getCoords(), this.tileScale);
+        });
+        this.render();
     }
 
     zoomIn() {
@@ -244,12 +257,15 @@ export default class Map {
             return ;
         }
 
-        if (this.options.zoomAnimation) {
-            this.zoomTransition = true;
-        }
+        this.clearZoomTimer();
 
         this.zoom -= 1;
-        this.update();
+        this.tileScale /= 2;
+        this.zoomAnimToScaleTile();
+
+        this.zoomTimer = setTimeout(() => {
+            this.update();
+        }, this.options.zoomAnimationDelay);
     }
 
     zoomOut() {
@@ -257,12 +273,15 @@ export default class Map {
             return ;
         }
 
-        if (this.options.zoomAnimation) {
-            this.zoomTransition = true;
-        }
+        this.clearZoomTimer();
 
         this.zoom += 1;
-        this.update();
+        this.tileScale *= 2;
+        this.zoomAnimToScaleTile();
+
+        this.zoomTimer = setTimeout(() => {
+            this.update();
+        }, this.options.zoomAnimationDelay);
     }
 
     getContainer() {
@@ -328,7 +347,7 @@ export default class Map {
                 _tiles.push(tileInstance);
                 tileInstance.createTile((tileMesh) => {
                     this.scene.add(tileMesh);
-                    TileUtils.transition(tileMesh, this.render.bind(this));
+                    TileUtils.fadeIn(tileMesh, this.render.bind(this));
                 });
             }
         });
@@ -337,13 +356,13 @@ export default class Map {
             obj.update();
         });
 
-        this.tiles.forEach((tileInstance) => {
+        TileUtils.fadeOut(this.tiles, (tileInstance) => {
             this.scene.remove(tileInstance.getTile());
             tileInstance.destroy();
         });
 
         this.tiles = _tiles;
-        this.zoomTransition = false;
+        this.tileScale = 1;
         this.render();
     }
 

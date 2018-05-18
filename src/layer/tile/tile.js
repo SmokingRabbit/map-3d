@@ -25,6 +25,10 @@ export default class Tile {
         return this.tile;
     }
 
+    getCoords() {
+        return this.coords;
+    }
+
     setCoords(coords) {
         this.coords = coords;
     }
@@ -66,12 +70,13 @@ export default class Tile {
         });
     }
 
-    update(coords) {
+    update(coords, scale = 1) {
         this.setCoords(coords);
         const { _x, _y, _z } = coords;
 
-        this.tile.position.set(_x, _y, _z);
+        this.tile.position.set(_x * scale, _y, _z * scale);
         this.tile.material.opacity = 1;
+        this.tile.scale.set(scale, 1, scale);
     }
 
     getTilUrl(str, data) {
