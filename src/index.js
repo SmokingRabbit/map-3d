@@ -1,4 +1,4 @@
-import Map from '@/map/map';
+import { Map } from '@/map';
 import { Point, Pixel } from '@/geometry';
 import { LngLat } from '@/geo';
 

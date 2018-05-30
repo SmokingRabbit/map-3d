@@ -1,3 +1,5 @@
-class base {
-    
-}
+import Map from './map';
+
+export {
+    Map
+};

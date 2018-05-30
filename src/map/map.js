@@ -36,9 +36,9 @@ export default class Map {
         // 背景颜色
         bgColor: 0x000000,
         // 雾化颜色
-        fogColor: 0x2b2b2b,
+        fogColor: 0x120f2d,
         // 雾化比例点
-        fogPercent: 0.00135,
+        fogPercent: 0.00105,
         // 相机可视角
         cameraFov: 70,
         // 相机最近照射点
@@ -92,7 +92,7 @@ export default class Map {
         const { width, height } = this.getMapSize();
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor);
-        // this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
+        this.scene.fog = new THREE.FogExp2(fogColor, fogPercent);
 
         const skyGeometry = new THREE.CubeGeometry(width, width, height);
         const directions  = ['xpos', 'xneg', 'ypos', 'yneg', 'zpos', 'zneg'];
